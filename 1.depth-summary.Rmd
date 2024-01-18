@@ -1,0 +1,139 @@
+---
+title: "Downsampling"
+author: "Lily Durkee"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+setwd("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias")
+```
+
+read in data
+
+```{r}
+# individual sample depths
+all.depth <- read_delim("covSummary.bedtools.txt", delim = " ")
+colnames(all.depth) <- c("full_ID", "ID", "site", "coverage")
+
+#library(stringr)
+
+all.depth$ID <- str_extract(all.depth$full_ID, "(?<=/).*?(?=_)")
+
+lane <- str_match(all.depth$full_ID, "_(.*?)_(.*?)")
+all.depth$lane <- lane[,2]
+
+all.depth$site <- substr(all.depth$ID, 1, 2)
+
+all.depth$bam <- sub(".*/([^_]+_[^_]+_[^_]+)_.*", "\\1", all.depth$full_ID)
+
+# all samples
+all.samples <- read.csv("all_samples.csv")
+
+all.depth <- merge(all.depth, all.samples, by="ID", all=T)
+
+```
+
+check out depth for all sites
+
+```{r}
+sum.depth <- all.depth %>%
+  group_by(site) %>%
+  summarize(depth = mean(coverage),
+            SD = sd(coverage),
+            N = n())
+```
+
+Box plots of coverage by site
+
+```{r}
+plot.depth <- ggplot(all.depth) +
+  geom_boxplot(aes(x = site, y = coverage)) +
+  theme_bw() +
+  scale_y_continuous(breaks=c(0:15))
+plot.depth
+
+# check outliers in PCA angst (genotype probabilities - much faster than GATK)
+# consider removing
+
+```
+
+### Let's downsample!
+
+Based on the plot above, try downsampling to 3x, 3.5x, and 4x. The downsampling function from Picard requires the proportion provided of what to downsample to. Thus, if a sample is 2x and you want to downsample to 1x, then you need to tell Picard to downsample 1x/2x = 0.5. Below, I downsample to 3 different coverage levels of interest.
+
+```{r}
+frac.depth <- all.depth[, c("bam", "coverage")] %>% mutate(x3.0 = ifelse(coverage > 3, 3 / coverage, NA), 
+         x4.0 = ifelse(coverage > 4, 4 / coverage, NA),
+         x3.5 = ifelse(coverage > 3.5, 3.5 / coverage, NA)) 
+
+# this is calculating the proportion of the bam file to keep to download
+
+frac.depth.long <- frac.depth %>%
+  pivot_longer(cols=3:5, # these columns correspond to the downsampled proportions
+               names_to = "Coverage",
+               values_to = "Frac") %>%
+  mutate(Frac = round(Frac, 2)) %>%
+  drop_na()
+
+frac.depth.long$coverage <- NULL
+
+write.table(frac.depth.long, file = "downsampling_array_full.txt", sep = "\t", row.names = FALSE, quote=F)
+
+```
+
+Once I've downsampled, I need proper bam lists to provide to Angsd when referencing which bam sets I'm using. Some files (if below the threshold for downsampling), will be called from the original bam, while others from the downsampled list. For example, a bam file that was originally 1.5x will be called from the original directory when working on all bams or the 2x downsampled list, but if I'm working with the 1x down sampled individuals I need to call this file from the 1x downsampled directory.
+
+Make file lists for angsd: i.e. specify correct directory for downsampled bams, as well as the old bam files (not downsampled)
+
+all individuals (179)
+
+```{r}
+bamdir <- frac.depth %>%
+  mutate(x4.0_dir = ifelse(is.na(x4.0),
+                         paste0("/scratch/alpine/ldurkee@colostate.edu/colias2023/bwa_mem/",bam),
+                         paste0("/scratch/alpine/ldurkee@colostate.edu/colias2023/bwa_mem/x4.0/",bam)),
+         x3.5_dir = ifelse(is.na(x3.5),
+                         paste0("/scratch/alpine/ldurkee@colostate.edu/colias2023/bwa_mem/",bam),
+                         paste0("/scratch/alpine/ldurkee@colostate.edu/colias2023/bwa_mem/x3.5/",bam)),
+         x3.0_dir = ifelse(is.na(x3.0),
+                          paste0("/scratch/alpine/ldurkee@colostate.edu/colias2023/bwa_mem/",bam),
+                         paste0("/scratch/alpine/ldurkee@colostate.edu/colias2023/bwa_mem/x3.0/",bam)))
+
+#4.0x bamfile
+write_delim(x = as.data.frame(bamdir[,"x4.0_dir"]),
+             file = "colias-full-down4.0x-bam-list.txt",
+             col_names = F)
+#3.5x bamfile
+write_delim(x = as.data.frame(bamdir[,"x3.5_dir"]),
+             file = "colias-full-down3.5x-bam-list.txt",
+             col_names = F)
+
+#3.0x bamfile
+write_delim(x = as.data.frame(bamdir[,"x3.0_dir"]),
+             file = "colias-full-down3.0x-bam-list.txt",
+             col_names = F)
+
+```
+
+All bams no related (325 individuals)
+
+```{r}
+bamdir_norelate <- read_table("../../data/samples/lists/amre.all.bams.norelate.txt", col_names = "bam") %>%
+  left_join(bamdir)
+
+# write_delim(x = bamdir_norelate[,"x2.0_dir"],
+#             file = "~/Downloads/amre-all-norelate-down2.0x-bam-list.txt",
+#             col_names = F)
+```
+
+Check new depth averages
+
+```{r}
+depth.frac %>%
+  mutate(x2_depth = ifelse(is.na(x2.0), depth, x2.0 * depth),
+         x1_depth = ifelse(is.na(x1.0), depth, x1.0 * depth),
+         x0.5_depth = ifelse(is.na(x0.5), depth, x0.5 * depth)) %>%
+  summary()
+```
+
