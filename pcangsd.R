@@ -2,17 +2,19 @@
 
 setwd("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias")
 
-#### 4.0x ####
+#### 4.0x by coverage ####
 
 #upload covariance matrix
 cov<-as.matrix(read.table("colias-full-down4.0x.cov"))
+names<-read_delim("colias-full-down4.0x-bam-list.ind", delim = " ", col_names=F)
 
 #eigenvalues
 e<-eigen(cov)
 
 #make dataframe
 e.df <- as.data.frame(e$vectors)
-e.df$ID <- names$V1
+e.df$ID <- names$X1
+
 e.df$name <- substr(e.df$ID, 1, 2)
 
 e.df <- e.df %>% dplyr::select(c(V1, V2, ID, name))
@@ -20,23 +22,26 @@ e.df <- e.df %>% dplyr::select(c(V1, V2, ID, name))
 #upload all info about sites
 sites <- read.csv("sites-all1.csv")
 
-pca_4.0x.data <- merge(e.df, sites, by="name", all=T)
-pca_4.0x.data$cov <- "4.0x"
+pca_4.0x <- merge(e.df, sites, by="name", all=T)
+pca_4.0x.data <- merge(pca_4.0x, all.depth, by="ID")
+pca_4.0x.data$cov <- ifelse(pca_4.0x.data$coverage>4, 4, pca_4.0x.data$coverage)
 
+pca_4.0x.data$category1 <- ifelse(pca_4.0x.data$name=="Eu", "C. eurytheme", 
+                            ifelse(pca_4.0x.data$name=="AL", "C. alexandra", pca_4.0x.data$elevation))
 
 #simple PCA
 plot(e$vectors[,1:2], xlim=c(-.1, .1))
 
 #with ggplot
-library(ggplot2)
+#library(ggplot2)
 plot4.0x <- ggplot(data=pca_4.0x.data, aes(x = V1, y = V2, 
-                           #color=name, 
-                           color=elevation)) +
-  geom_point()+
+                           shape=category1, 
+                           color=cov)) +
+  geom_point(size=2)+
   labs(x="PC1", y="PC2") +
-  xlim(-.125, .025) +
-  ylim(-.1, .35) +
-  geom_text(aes(label=ID), color="black", size=2.5, vjust=.5, hjust=.5)
+  xlim(-.025, .025) +
+  ylim(-.05, .075) #+
+  #geom_text(aes(label=ID), color="black", size=2.5, vjust=.5, hjust=.5)
 
 plot4.0x
 
