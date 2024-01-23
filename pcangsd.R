@@ -29,18 +29,23 @@ pca_4.0x.data$cov <- ifelse(pca_4.0x.data$coverage>4, 4, pca_4.0x.data$coverage)
 pca_4.0x.data$category1 <- ifelse(pca_4.0x.data$name=="Eu", "C. eurytheme", 
                             ifelse(pca_4.0x.data$name=="AL", "C. alexandra", pca_4.0x.data$elevation))
 
+pca_4.0x.data$pair <- ifelse(pca_4.0x.data$name=="WY", "WY", 
+                       ifelse(pca_4.0x.data$name=="SC", "E2", pca_4.0x.data$pair))
+
+
 #simple PCA
 plot(e$vectors[,1:2], xlim=c(-.1, .1))
 
 #with ggplot
 #library(ggplot2)
-plot4.0x <- ggplot(data=pca_4.0x.data, aes(x = V1, y = V2, 
+plot4.0x <- ggplot(data=filter(pca_4.0x.data, name != "AL" & name != "Eu"), aes(x = V1, y = V2, 
                            shape=category1, 
-                           color=cov)) +
+                           color=pair)) +
   geom_point(size=2)+
   labs(x="PC1", y="PC2") +
-  xlim(-.025, .025) +
-  ylim(-.05, .075) #+
+  xlim(-.005, .025) +
+  ylim(-.05, .06) #+
+  #scale_colour_gradient(low="red", high="blue")#+
   #geom_text(aes(label=ID), color="black", size=2.5, vjust=.5, hjust=.5)
 
 plot4.0x
@@ -128,7 +133,7 @@ plot3.0x <- ggplot(data=pca_3.5x.data, aes(x = V1, y = V2,
 plot3.0x
 
 
-### all ###
+#### all ####
 pca_all <- rbind(pca_3.0x.data, pca_3.5x.data, pca_4.0x.data)
 
 pca_all$category1 <- ifelse(pca_all$name=="Eu", "C. eurytheme", 
