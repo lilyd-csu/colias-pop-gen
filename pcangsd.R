@@ -2,7 +2,29 @@
 
 setwd("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias")
 
-#### 4.0x by coverage ####
+#### 4.0x - data processing ####
+
+# coverage data
+# individual sample depths
+all.depth <- read_delim("covSummary.bedtools.txt", delim = " ")
+colnames(all.depth) <- c("full_ID", "ID", "site", "coverage")
+
+#library(stringr)
+
+all.depth$ID <- str_extract(all.depth$full_ID, "(?<=/).*?(?=_)")
+
+lane <- str_match(all.depth$full_ID, "_(.*?)_(.*?)")
+all.depth$lane <- lane[,2]
+
+all.depth$site <- substr(all.depth$ID, 1, 2)
+
+all.depth$bam <- sub(".*/([^_]+_[^_]+_[^_]+)_.*", "\\1", all.depth$full_ID)
+
+# all samples
+all.samples <- read.csv("all_samples.csv")
+
+all.depth <- merge(all.depth, all.samples, by="ID", all=T)
+
 
 #upload covariance matrix
 cov<-as.matrix(read.table("colias-full-down4.0x.cov"))
@@ -34,21 +56,33 @@ pca_4.0x.data$pair <- ifelse(pca_4.0x.data$name=="WY", "WY",
 
 
 #simple PCA
-plot(e$vectors[,1:2], xlim=c(-.1, .1))
+#plot(e$vectors[,1:2], xlim=c(-.1, .1))
 
-#with ggplot
+#### plot 1: by coverage ####
 #library(ggplot2)
-plot4.0x <- ggplot(data=filter(pca_4.0x.data, name != "AL" & name != "Eu"), aes(x = V1, y = V2, 
+plot4.0x.cov <- ggplot(data=pca_4.0x.data, aes(x = V1, y = V2, 
+                                           shape=category1, 
+                                           color=cov)) +
+  geom_point(size=2)+
+  labs(x="PC1", y="PC2") +
+  xlim(-.025, .025) +
+  ylim(-.05, .06) +
+  scale_colour_gradient(low="red", high="blue")#+
+#geom_text(aes(label=ID), color="black", size=2.5, vjust=.5, hjust=.5)
+
+plot4.0x.cov
+
+#### plot 2: by site pair ####
+#library(ggplot2)
+plot4.0x.pair <- ggplot(data=filter(pca_4.0x.data, name != "AL" & name != "Eu"), aes(x = V1, y = V2, 
                            shape=category1, 
                            color=pair)) +
   geom_point(size=2)+
   labs(x="PC1", y="PC2") +
   xlim(-.005, .025) +
-  ylim(-.05, .06) #+
-  #scale_colour_gradient(low="red", high="blue")#+
-  #geom_text(aes(label=ID), color="black", size=2.5, vjust=.5, hjust=.5)
+  ylim(-.05, .06) 
 
-plot4.0x
+plot4.0x.pair
 
 ## Notes: FV14 clumps with C. euretheme individuals
 ## use: filter(pca_4.0x.data, name != "Eu")
