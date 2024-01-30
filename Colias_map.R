@@ -3,16 +3,36 @@
 setwd("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias")
 
 
-library(ggplot2)
-library(tidyr)
+library(raster)  # important to load before tidyverse, otherwise it masks select()
+library(tidyverse)
 library(sf)
-library(rnaturalearth)
-library(rnaturalearthdata)
 library(ggspatial)
-library(googleway)
-library(ggrepel)
-library(usmap)
-library(maps)
+
+#### raster file #####
+domain <- c(
+  xmin = -120,
+  xmax = -100,
+  ymin = 30,
+  ymax = 50
+)
+
+#creates new directory
+dir.create("ne_rasters", showWarnings = FALSE)
+
+tmpfile <- tempfile()
+
+options(timeout=200)
+
+downloader::download(
+  url = "https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/raster/HYP_HR_SR_OB_DR.zip",
+  dest = tmpfile
+)
+
+unzip(zipfile = tmpfile, exdir = "ne_rasters")
+
+# cropping the file
+hypso <- brick("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias/Data/ne_rasters/HYP_HR_SR_OB_DR.tif")
+hypso_cropped <- crop(hypso, extent(domain)) 
 
 ######## maps #########
 state <- map_data("state")
@@ -25,6 +45,24 @@ sites$pair <- ifelse(sites$name=="SC", "E2", ifelse(
                      sites$name=="WY", "WY", sites$pair))
 
 CDT <- read.csv("CDT.csv")
+
+#### fancy map with raster ####
+map_raster <- ggplot() +
+  ggspatial::layer_spatial(hypso_cropped) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + #might input state here
+  geom_point(data = sites, 
+                     mapping = aes(x = x, y = y, color=pair, shape=elevation), 
+                     size = 4)+
+  geom_line(data = sites, mapping = aes(x=x, y=y, color=pair, group=pair), linewidth=1)+
+  scale_color_manual(values = c("aquamarine", "turquoise1", "turquoise3", "turquoise4",
+                               "violet", "violetred1","violetred4", "red")) +
+  scale_shape_manual(values = c(17, 16))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+map_raster
+
 
 #### site pairs only ####
 co_map1 <- ggplot(data=state, mapping=aes(x=long, y=lat, group=group)) + 
