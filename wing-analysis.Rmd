@@ -1,0 +1,172 @@
+---
+title: "CURC - Colias wing analysis"
+author: "Lily Durkee"
+date: "2024-04-08"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Prep: data upload and management
+
+```{r, include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(lme4)
+library(lmerTest)
+library(emmeans)
+library(car)
+
+```
+
+```{r}
+
+theme_font1 <- function(base_family="Arial") {
+  theme(axis.text.x=element_text(size=12),
+        axis.text.y=element_text(size=12), 
+        axis.title.x=element_text(size=16),
+        axis.title.y=element_text(size=16),
+        legend.text=element_text(size=12),
+        legend.title=element_text(size=14))}
+
+setwd("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias/Data")
+
+wing_dorsal <- read.csv("wing-imageJ-dorsal.csv")
+wing_ventral <- read.csv("wing-imageJ-ventral.csv")
+
+wing_all <- merge(wing_dorsal, wing_ventral, by="ID", all=F)
+wing_all$site <- substr(wing_all$ID, 1, 2)
+sites <- read.csv("sites-all1.csv")
+
+wing_site <- merge(wing_all, sites, by="site", all=T)
+wing_site$ventral_mel <- wing_site$total.area.mm.y
+wing_site$dorsal_mel <- wing_site$total.area.mm.x
+
+wing_site$length.hind <- as.numeric(wing_site$length.1)
+wing_site$length.fore <- as.numeric(wing_site$length)
+wing_site$wing.wear <- as.factor(wing_site$wing.wear)
+
+wing_site$wing.spot <- as.numeric(wing_site$area.2)
+```
+
+## Map
+
+```{r}
+hypso <- brick("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias/Data/ne_rasters/HYP_HR_SR_OB_DR.tif")
+hypso_cropped <- crop(hypso, extent(domain)) 
+
+state <- map_data("state")
+counties <- map_data("county")
+
+domain <- c(
+  xmin = -120,
+  xmax = -100,
+  ymin = 30,
+  ymax = 50
+)
+
+wing_site.sum <- wing_site %>% 
+  group_by(site) %>%
+  summarize(mean_lat=mean(x),
+            mean_long=mean(y))
+
+## high vs low
+ggplot() +
+  ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + #might input state here
+  geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="gray60", size=.01)+
+  geom_line(data = sites, mapping = aes(x=x, y=y, group=pair), linewidth=.7)+
+  geom_point(data = sites, 
+             mapping = aes(x = x, y = y, color=elevation, shape=elevation), 
+             size = 5)+
+  scale_color_manual(values=c("royalblue", "red"))+
+  scale_shape_manual(values = c(8, 20))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+```
+
+## Dorsal vs. ventral melanization
+
+```{r}
+model1 <- lm(dorsal_mel ~ ventral_mel*sex.y + length.hind + wing.wear, data=wing_site)
+summary(model1)
+
+ggplot(data=wing_site, aes(x=ventral_mel, y=dorsal_mel, color=sex.y, shape=sex.y))+
+  geom_point(alpha=.8, size=2) +
+  geom_smooth(method="lm") +
+  xlab("Ventral melanization") +
+  ylab("Dorsal melanization") +
+  labs(color = "sex", shape = "sex") +
+  scale_color_manual(values=c("hotpink", "skyblue"))+
+  scale_shape_manual(values=c(15, 17))+
+  theme_classic()+
+  theme_font1()
+
+ggsave("dorsal-ventral.tiff", width=5, height=4)
+
+```
+**Comments:** There is a positive correlation between dorsal melanization and ventral melanization in both males and females. 
+
+
+## Dorsal melanization vs. elevation
+
+```{r}
+model2 <- lm(dorsal_mel ~ elevation + length.hind + wing.wear + sex.y, data=wing_site)
+summary(model2)
+
+# testing the difference between high vs. low
+emmeans(model2, pairwise ~ elevation)
+
+ggplot(data=wing_site, aes(x=elevation, y=dorsal_mel, color=elevation, shape=elevation))+
+  geom_boxplot(outlier.shape=NA, size=1)+
+  geom_jitter(width=.1, size=2, alpha=.4) +
+  xlab("Elevation") +
+  ylab(expression(paste("Melanization (mm"^2, ")"))) +
+ # scale_fill_manual(values=c("royalblue", "red"))+
+  scale_color_manual(values=c("royalblue", "red"))+
+  scale_shape_manual(values=c(8,20))+
+  theme_classic()+
+  theme_font1()+
+  theme(legend.position = "none") 
+
+ggsave("dorsal-high-v-low.tiff", width=5, height=4)
+
+```
+
+**Comments:** There is significantly higher dorsal melanization in high elevation (> 2500m) populations.
+
+
+
+## Wing spot area vs. elevation
+```{r}
+model3 <- lm(wing.spot ~ elevation + length.fore + wing.wear, data=wing_site)
+summary(model3)
+
+ggplot(data=wing_site, aes(x=length.fore, y=wing.spot))+
+  geom_point(aes(color=elevation, shape=elevation))+
+  geom_smooth(method="lm", color="black")+
+  xlab("Length of forewing (mm)") +
+  ylab("Wing spot area") +
+  scale_color_manual(values=c("royalblue", "red"))+
+  scale_shape_manual(values=c(8,20))+
+  theme_classic()+
+  theme_font1()
+
+ggsave("spot-size.tiff", width=5, height=4)
+
+```
+
+**Comments**: There was no correlation with spot size and elevation. However, there was a strong correlation between forewing length and spot size, indicating that larger wings tend to have larger spots.
+
+
+## Exploratory analyses
+```{r}
+
+# no relationship
+model4 <- lm(length.fore ~ elevation, data=wing_site)
+summary(model4)
+```

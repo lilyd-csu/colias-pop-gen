@@ -1,0 +1,116 @@
+---
+title: "Isolation by Distance"
+output: html_document
+date: "2024-03-20"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(geosphere)   
+```
+
+## Create Data Frame
+```{r}
+library(readr)
+my_data<-read_csv("Data/sites.csv", col_names = FALSE)
+
+
+#Haversine Distance measure in meters
+pair_dist <- distm(sites[, c("x", "y")], fun = distHaversine)
+rownames(pair_dist) <- sites$site
+colnames(pair_dist) <- sites$site
+
+pair_dist <- as.data.frame.table(pair_dist)
+
+# Rename columns
+colnames(pair_dist) <- c("site1", "site2", "distance")
+
+# Remove rows where site1 equals site2
+pair_dist <- pair_dist[pair_dist$site1 != pair_dist$site2, ]
+pair_dist$distance <- pair_dist$distance / 1000
+
+pair_dist$site_pair <- paste(pair_dist$site1, pair_dist$site2, sep = "_")
+
+```
+
+
+## Upload paired Fst
+```{r}
+pair_fst <- read_delim("Data/weighted_fst_results.txt", delim = " ")
+pair_fst$weighted_fst <- pair_fst$Weighted_Fst
+
+pair_fst$site_pair <- substr(paired_fst$File, 5, 9)
+```
+
+## Creating the final data file
+```{r}
+pair_fst_dist1 <- merge(paired_fst, pair_dist, by="site_pair", all=F)
+
+# run the following in order ###
+sites <- read.csv("Data/sites-all1.csv")
+sites$site1 <- sites$site
+pair_fst_dist2 <- merge(pair_fst_dist1, sites, by="site1", all=F)
+
+sites <- read.csv("Data/sites-all1.csv")
+sites$site2 <- sites$site
+
+pair_fst_dist <- merge(pair_fst_dist2, sites, by="site2", all=F) 
+###
+
+# high-low variable
+
+pair_fst_dist$elev_gradient <- ifelse(pair_fst_dist$elevation.x == "high" & pair_fst_dist$elevation.y == "low", 2, 
+                                       ifelse(pair_fst_dist$elevation.x == "low" & pair_fst_dist$elevation.y == "high", 2,
+                                              ifelse(pair_fst_dist$elevation.x == "low" & pair_fst_dist$elevation.y == "low", 1, 3)))
+
+
+pair_fst_dist$ew_gradient <- ifelse(pair_fst_dist$divide.x == "east" & pair_fst_dist$divide.y == "west", "east-west", 
+                                    ifelse(pair_fst_dist$divide.x == "west" & pair_fst_dist$divide.y == "east", "east-west",
+                                           ifelse(pair_fst_dist$divide.x == "east" & pair_fst_dist$divide.y == "east", "east-east", "west-west")))
+
+
+## slatkin's D
+  
+pair_fst_dist$slatkin_D <- (pair_fst_dist$Weighted_Fst / (1-pair_fst_dist$Weighted_Fst))
+
+
+pair_fst_dist$sorted_pairs <- apply(pair_fst_dist[, c("site1", "site2")], 1, function(x) paste(sort(x), collapse = "-"))
+
+# Remove duplicates based on sorted pairs
+pair_unique <- pair_fst_dist[!duplicated(pair_fst_dist$sorted_pairs), ]
+pair_unique$ew_gradient <- as.factor(pair_unique$ew_gradient)
+
+```
+
+## Isolation by distance
+```{r}
+ggplot(data=pair_unique, aes(x=distance, y=slatkin_D))+
+  geom_point(aes(color=ew_gradient))+
+  geom_smooth(method="lm", color="black")+
+  xlab("Distance (km)") +
+  ylab("Slatkin's D") +
+  scale_color_manual(values=c("red", "purple", "blue"))+
+  labs(color="KEY")+
+  theme_classic()+
+  theme_font1()
+```
+
+## Check which pairs are missing
+
+```{r}
+all.sites <- c(sites$site)
+# Generate all possible pairs
+all_pairs <- combn(all.sites, 2)
+
+# Convert pairs to strings for comparison
+all_pairs_strings <- apply(all_pairs, 2, function(x) paste(sort(x), collapse = "-"))
+
+# Convert pairs in your dataset to strings
+your_pairs_strings <- apply(pair_unique[, c("site1", "site2")], 1, function(x) paste(sort(x), collapse = "-"))
+
+# Find missing pairs
+missing_pairs <- setdiff(all_pairs_strings, your_pairs_strings)
+
+# Print missing pairs
+print(missing_pairs)
+```
