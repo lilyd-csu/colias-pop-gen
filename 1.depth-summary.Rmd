@@ -6,12 +6,12 @@ output: html_document
 
 ```{r}
 library(tidyverse)
-setwd("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias")
 ```
 
 read in data
 
 ```{r}
+setwd("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias/Data")
 # individual sample depths
 all.depth <- read_delim("covSummary.bedtools.txt", delim = " ")
 colnames(all.depth) <- c("full_ID", "ID", "site", "coverage")

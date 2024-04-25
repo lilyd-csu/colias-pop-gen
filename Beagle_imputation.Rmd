@@ -1,0 +1,148 @@
+---
+title: "Imputation with beagle"
+author: "Christen Bossu"
+date: "10/21/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Programs you will need
+beagle: for imputation
+bcftools: for counting variants per scaffold
+vcftools: for filtering out scaffolds that only have one variant
+
+## Bash and unix scripting
+Most of this will be done with bash or scripting in the terminal. I'm using Rmarkdown because I like the code chunks. But you really won't be using R (except for maybe plotting something).
+
+First you are going to have a vcf file you want to impute. Beagle seems simple enough in that you give a vcf file, say impute=true, but it throws errors when there are only one variant on a scaffold/chromosome. So what we are going to do is use bcftools to count the number of variants per scaffold.
+
+To do this we need to bgzip our vcfile and index it with bcftools. I have bcftools loaded in a conda environment
+
+```
+conda activate bioinf
+
+bgzip -c COYEP1-4c.merged_gatk.srs.filtered_gatkVQSR2.PASS.8miss.rm_rel.recode.vcf > COYEP1-4c.merged_gatk.srs.filtered_gatkVQSR2.PASS.8miss.rm_rel.recode.vcf.gz
+
+bcftools index COYEP1-4c.merged_gatk.srs.filtered_gatkVQSR2.PASS.8miss.rm_rel.recode.vcf.gz
+```
+
+With an indexed vcf file, it's really easy to identify the next steps. Maybe not fast give thousands of scaffolds, but quicker than any other method I've found
+
+Create a chromosome list using bcftools to extract information, use uniq to remove duplicated chromosomes.
+```{bash}
+bcftools query -f '%CHROM\n' AMCR.pass-maf-0.01.SNP.rm_Outlier_lowC.max_miss.8.chr_fix.vcf.gz |uniq > chr_file
+
+
+cat chr_file|head -5
+```
+
+```
+PseudoNC_046332.1_chromosome_1
+PseudoNC_046333.1_chromosome_2
+PseudoNC_046334.1_chromosome_4
+PseudoNC_046335.1_chromosome_5
+PseudoNC_046336.1_chromosome_6
+```
+Now we want to count the number of variants per chromosme. Here's how you do it for one scaffold/chromosome. 
+
+1) view the vcf, for one region (aka scaffold), then pipe in a grep command to remove comment in vcf (^#= starts with #), and the -c means to count the number of occurances.
+
+```{bash}
+vcf_in="COYEP1-4c.merged_gatk.srs.filtered_gatkVQSR2.PASS.8miss.rm_rel.recode.vcf.gz"
+bcftools view -r NW_008246021.1_Corvus_brachyrhynchos_isolate_BGI_N302_unplaced_genomic_scaffold_ASM69197v1_C12238822_whole_genome_shotgun_sequence AMCR.pass-maf-0.01.SNP.rm_Outlier_lowC.max_miss.8.chr_fix.vcf.gz | grep -v -c '^#'
+
+```
+
+Let's create a bash script to do this for all scaffolds
+
+```
+nano variant_count.sh
+
+#!/bin/bash
+chromlist=($(cat chr_file))
+vcf_in="AMCR.pass-maf-0.01.SNP.rm_Outlier_lowC.max_miss.8.chr_fix.vcf.gz"
+
+for chrom in "'${chromlist[@]}'" #might not need these quotes
+do
+count=$(bcftools view -r $chrom $vcf_in | grep -v -c '^#')
+echo "$chrom:$count" >> snp_count_per_scaf.txt
+done
+```
+You should have a new file (variant_count.sh), but it's not execuatable yet.
+
+```
+chmod +x variant_count.sh
+```
+
+Now you can run it your terminal
+```
+./variant_count.sh
+```
+
+If this doesn't work for some odd reason (syntax error say), below is another possibility of getting the number:
+
+```
+zcat AMCR.pass-maf-0.01.SNP.rm_Outlier_lowC.max_miss.8.chr_fix.vcf.gz| grep -v "^#" | cut -f 1 | sort | uniq -c > snp_count_per_scaf.txt
+
+```
+
+Once it finishes, you should have a file called snp_count_per_scaf.txt. What we want for beagle is to identify only the scaffolds with 1 variant
+
+```
+cat snp_count_per_scaf.txt|tr ":" "\t"| awk '$2<10{print$1}' > singleton.chr.txt
+```
+
+Create a new bash script to just get the chromosome and posiition for the singleton chromosomes
+
+```
+nano singleton_scaf_pos.sh
+#!/bin/bash
+
+chromlist=($(cat singleton.chr.txt))
+
+for chrom in "'${chromlist[@]}'"
+do
+count=$(bcftools query -r $chrom -f '%CHROM\t%POS\n' AMCR.pass-maf-0.01.SNP.rm_Outlier_lowC.max_miss.8.chr_fix.vcf.gz| grep -v '^#')
+echo "$count" >> singleton_lth10_pos_bcftools.txt
+done
+
+```
+--exclude-positions 
+Change permissions so you can run it.
+
+```
+chmod +x singleton_scaf_pos.sh
+
+./singleton_scaf_pos.sh
+
+```
+Now we want to remove these positions from the original vcf file, and we can do this with vcftools
+
+```
+vcftools --gzvcf AMCR.pass-maf-0.01.SNP.rm_Outlier_lowC.max_miss.8.chr_fix.vcf.gz \
+--out AMCR.pass-maf-0.01.SNP.rm_Outlier_lowC.max_miss.8.chr_fix.rm_scaf_lth10 \
+--exclude-positions singleton_lth10_pos_bcftools.txt --recode
+```
+
+Now you have a vcf file without chromsomes with only one loci. Fingers crossed beagle does not throw and error.
+
+I have beagle in another conda environment, and I have a slurm script to run this on the summit cluster, with 24 cores.
+
+```{}
+j=$1
+
+source ~/.bashrc
+conda activate imputation
+
+BEAGLE_JAR_4_1="/projects/cbossu@colostate.edu/beagle.27Jan18.7e1.jar"
+
+#Test beagle 4.1
+java -Xmx96G -jar $BEAGLE_JAR_4_1 \
+gl="$j" \
+out="$j".gl_impute4.1 \
+nthreads=24
+```
+
+So after an initial run with winter data, I think we'll need to split the vcf into regions with vcftools before running beagle! 

@@ -7,6 +7,7 @@ library(raster)  # important to load before tidyverse, otherwise it masks select
 library(tidyverse)
 library(sf)
 library(ggspatial)
+library(RColorBrewer)
 
 #### raster file #####
 domain <- c(
@@ -17,18 +18,18 @@ domain <- c(
 )
 
 #creates new directory
-dir.create("ne_rasters", showWarnings = FALSE)
+# dir.create("ne_rasters", showWarnings = FALSE)
+# 
+# tmpfile <- tempfile()
+# 
+# options(timeout=200)
+# 
+# downloader::download(
+#   url = "https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/raster/HYP_HR_SR_OB_DR.zip",
+#   dest = tmpfile
+# )
 
-tmpfile <- tempfile()
-
-options(timeout=200)
-
-downloader::download(
-  url = "https://www.naturalearthdata.com/http//www.naturalearthdata.com/download/10m/raster/HYP_HR_SR_OB_DR.zip",
-  dest = tmpfile
-)
-
-unzip(zipfile = tmpfile, exdir = "ne_rasters")
+# unzip(zipfile = tmpfile, exdir = "ne_rasters")
 
 # cropping the file
 hypso <- brick("/Users/lilydurkee/OneDrive - Colostate/Grad School/R-Projects-Grad/Colias/Data/ne_rasters/HYP_HR_SR_OB_DR.tif")
@@ -41,27 +42,119 @@ counties <- map_data("county")
 #co_wy2 <- subset(counties, region=="colorado" | region=="wyoming")
 
 sites <- read.csv("sites-all1.csv")
-sites$pair <- ifelse(sites$name=="SC", "E2", ifelse(
-                     sites$name=="WY", "WY", sites$pair))
+#sites$pair <- ifelse(sites$name=="SC", "E2", ifelse(
+#                     sites$name=="WY", "WY", sites$pair))
 
 CDT <- read.csv("CDT.csv")
 
-#### fancy map with raster ####
+#### fancy map with raster - entsoc ####
 map_raster <- ggplot() +
-  ggspatial::layer_spatial(hypso_cropped) +
+  ggspatial::layer_spatial(hypso_cropped, alpha=.5) +
   geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
                color="black", fill="white", alpha=0) + #might input state here
-  geom_point(data = sites, 
-                     mapping = aes(x = x, y = y, color=pair, shape=elevation), 
-                     size = 4)+
+  geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="darkred", size=.01, alpha=.01)+
   geom_line(data = sites, mapping = aes(x=x, y=y, color=pair, group=pair), linewidth=1)+
-  scale_color_manual(values = c("aquamarine", "turquoise1", "turquoise3", "turquoise4",
-                               "violet", "violetred1","violetred4", "red")) +
-  scale_shape_manual(values = c(17, 16))+
+  geom_point(data = sites, 
+             mapping = aes(x = x, y = y, color=pair, shape=elevation), 
+             size = 5)+
+  scale_color_brewer(palette="Dark2")+
+  scale_shape_manual(values = c(8, 20))+
   theme_minimal() +
   coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
 
 map_raster
+
+#### CDT only - entsoc ####
+
+map_no.raster <- ggplot() +
+  #ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + #might input state here
+  geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="gray60", size=.01)+
+  geom_line(data = sites, mapping = aes(x=x, y=y, color=pair, group=pair), linewidth=.7)+
+  geom_point(data = sites, 
+             mapping = aes(x = x, y = y, color=pair, shape=elevation), 
+             size = 5)+
+
+  scale_color_brewer(palette="Dark2")+
+  scale_shape_manual(values = c(8, 20))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+map_no.raster
+
+
+#### high vs low for CURC ####
+ggplot() +
+  ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + #might input state here
+  geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="gray60", size=.01)+
+ # geom_line(data = sites, mapping = aes(x=x, y=y, group=pair), linewidth=.7)+
+  geom_point(data = sites, 
+             mapping = aes(x = x, y = y, color=elevation, shape=elevation), 
+             size = 5)+
+  scale_color_manual(values=c("royalblue", "red"))+
+  scale_shape_manual(values = c(8, 20))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+ggsave("Colias-map.tiff")
+
+sites$divide <- ifelse(sites$pair=="WY", "E", 
+                       ifelse(sites$site == "HM", "W", substr(sites$pair, 1, 1)))
+
+ggplot() +
+  #ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + #might input state here
+  geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="gray60", size=.01)+
+#  geom_line(data = sites, mapping = aes(x=x, y=y, group=pair), linewidth=.7)+
+  geom_point(data = sites, 
+             mapping = aes(x = x, y = y, color=divide, shape=divide), 
+             size = 3)+
+  scale_color_manual(values=c("forestgreen", "orange"))+
+  scale_shape_manual(values = c(15, 17))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+
+#### fancy map with raster - attempt 1####
+map_raster <- ggplot() +
+  ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + #might input state here
+  geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="gray60", size=.01)+
+  geom_line(data = sites, mapping = aes(x=x, y=y, color=pair, group=pair), linewidth=.7)+
+  geom_point(data = sites, 
+                     mapping = aes(x = x, y = y, color=pair, shape=elevation), 
+                     size = 5)+
+   scale_color_manual(values = c("aquamarine", "turquoise1", "turquoise3", "turquoise4",
+                               "hotpink", "violetred2","violetred4", "darkgreen")) +
+  scale_shape_manual(values = c(18, 20))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+map_raster
+
+#### CDT only - attempt 1 ####
+
+map_no.raster <- ggplot() +
+  #ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + #might input state here
+  geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="gray60", size=.01)+
+  geom_line(data = sites, mapping = aes(x=x, y=y, color=pair, group=pair), linewidth=.7)+
+  geom_point(data = sites, 
+             mapping = aes(x = x, y = y, color=pair, shape=elevation), 
+             size = 5)+
+  scale_color_manual(values = c("aquamarine", "turquoise1", "turquoise3", "turquoise4",
+                                "hotpink", "violetred2","violetred4", "darkgreen")) +
+  scale_shape_manual(values = c(8, 20))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+map_no.raster
 
 
 #### site pairs only ####

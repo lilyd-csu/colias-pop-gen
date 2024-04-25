@@ -37,9 +37,9 @@ pair_dist$site_pair <- paste(pair_dist$site1, pair_dist$site2, sep = "_")
 ## Upload paired Fst
 ```{r}
 pair_fst <- read_delim("Data/weighted_fst_results.txt", delim = " ")
-pair_fst$weighted_fst <- pair_fst$Weighted_Fst
+#pair_fst$weighted_fst <- pair_fst$Weighted_Fst
 
-pair_fst$site_pair <- substr(paired_fst$File, 5, 9)
+pair_fst$site_pair <- substr(pair_fst$File, 5, 9)
 ```
 
 ## Creating the final data file
@@ -68,31 +68,36 @@ pair_fst_dist$ew_gradient <- ifelse(pair_fst_dist$divide.x == "east" & pair_fst_
                                     ifelse(pair_fst_dist$divide.x == "west" & pair_fst_dist$divide.y == "east", "east-west",
                                            ifelse(pair_fst_dist$divide.x == "east" & pair_fst_dist$divide.y == "east", "east-east", "west-west")))
 
+pair_unique$ew_gradient <- as.factor(pair_unique$ew_gradient)
 
 ## slatkin's D
   
 pair_fst_dist$slatkin_D <- (pair_fst_dist$Weighted_Fst / (1-pair_fst_dist$Weighted_Fst))
 
 
-pair_fst_dist$sorted_pairs <- apply(pair_fst_dist[, c("site1", "site2")], 1, function(x) paste(sort(x), collapse = "-"))
-
 # Remove duplicates based on sorted pairs
-pair_unique <- pair_fst_dist[!duplicated(pair_fst_dist$sorted_pairs), ]
-pair_unique$ew_gradient <- as.factor(pair_unique$ew_gradient)
+#pair_fst_dist$sorted_pairs <- apply(pair_fst_dist[, c("site1", "site2")], 1, function(x) paste(sort(x), collapse = "-"))
+
+#pair_unique <- pair_fst_dist[!duplicated(pair_fst_dist$sorted_pairs), ]
+
+
 
 ```
 
 ## Isolation by distance
 ```{r}
-ggplot(data=pair_unique, aes(x=distance, y=slatkin_D))+
+ggplot(data=pair_fst_dist, aes(x=distance, y=slatkin_D))+
   geom_point(aes(color=ew_gradient))+
-  geom_smooth(method="lm", color="black")+
+  geom_smooth(method="lm", aes(color=ew_gradient))+
   xlab("Distance (km)") +
   ylab("Slatkin's D") +
   scale_color_manual(values=c("red", "purple", "blue"))+
   labs(color="KEY")+
   theme_classic()+
   theme_font1()
+
+# split by group
+# have colors match the map
 ```
 
 ## Check which pairs are missing
@@ -106,7 +111,7 @@ all_pairs <- combn(all.sites, 2)
 all_pairs_strings <- apply(all_pairs, 2, function(x) paste(sort(x), collapse = "-"))
 
 # Convert pairs in your dataset to strings
-your_pairs_strings <- apply(pair_unique[, c("site1", "site2")], 1, function(x) paste(sort(x), collapse = "-"))
+your_pairs_strings <- apply(pair_fst_dist[, c("site1", "site2")], 1, function(x) paste(sort(x), collapse = "-"))
 
 # Find missing pairs
 missing_pairs <- setdiff(all_pairs_strings, your_pairs_strings)
