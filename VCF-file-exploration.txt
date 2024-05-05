@@ -1,0 +1,125 @@
+## Exploring my VCF file 
+## colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gl_impute4.1.vcf.gz
+
+# I ran this code line by line on alpine, I did not run it as a 
+# Who is in this file?
+
+bcftools query -l colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gl_impute4.1.vcf.gz
+
+# this correctly gave all 165 sample IDs
+
+# How many variants are in this file?
+bcftools stats colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gl_impute4.1.vcf.gz | less -S
+
+# SN    [2]id   [3]key  [4]value
+SN      0       number of samples:      165
+SN      0       number of records:      1454624
+SN      0       number of no-ALTs:      0
+SN      0       number of SNPs: 1454624
+SN      0       number of MNPs: 0
+SN      0       number of indels:       0
+SN      0       number of others:       0
+SN      0       number of multiallelic sites:   0
+SN      0       number of multiallelic SNP sites:       0
+# TSTV, transitions/transversions:
+# TSTV  [2]id   [3]ts   [4]tv   [5]ts/tv        [6]ts (1st ALT) [7]tv (1st ALT) [8]ts/tv (1st ALT)
+TSTV    0       866768  587856  1.47    866768  587856  1.47
+# SiS, Singleton stats:
+# SiS   [2]id   [3]allele count [4]number of SNPs       [5]number of transitions        [6]number of transversions      [7]number>
+SiS     0       1       1454624 866768  587856  0       0       0       0
+# AF, Stats by non-reference allele frequency:
+# AF    [2]id   [3]allele frequency     [4]number of SNPs       [5]number of transitions        [6]number of transversions      [>
+AF      0       0.000000        1454624 866768  587856  0       0       0       0
+# QUAL, Stats by quality
+# QUAL  [2]id   [3]Quality      [4]number of SNPs       [5]number of transitions (1st ALT)      [6]number of transversions (1st A>
+QUAL    0       .       1454624 866768  587856  0
+# IDD, InDel distribution:
+# IDD   [2]id   [3]length (deletions negative)  [4]number of sites      [5]number of genotypes  [6]mean VAF
+# ST, Substitution types:
+# ST    [2]id   [3]type [4]count
+ST      0       A>C     53776
+ST      0       A>G     182528
+ST      0       A>T     135347
+ST      0       C>A     67056
+ST      0       C>G     37508
+ST      0       C>T     250494
+ST      0       G>A     250923
+ST      0       G>C     37477
+ST      0       G>T     67120
+ST      0       T>A     135905
+ST      0       T>C     182823
+ST      0       T>G     53667
+
+# Where are these variants?
+bcftools query -f '%CHROM\t%POS\n' colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gl_impute4.1.vcf.gz | less 
+# prints the chromosome name and position for each variable 
+
+# to see how many variants are on each chromosome/scaffold, sorted by number of variants
+
+bcftools query -f '%CHROM\t%POS\n' colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gl_impute4.1.vcf.gz | awk '{n[$1]++} END {for(i in n) print i, n[i]}' | sort -nbr -k 2
+
+# this was especially cool!
+# My species has 31 chromosomes
+
+# output:
+
+NC_059537.1 72292
+NC_059540.1 70942
+NC_059539.1 69371
+NC_059538.1 65905
+NC_059542.1 64651
+NC_059544.1 62968
+NC_059543.1 62584
+NC_059541.1 61237
+NC_059549.1 58357
+NC_059546.1 56426
+NC_059547.1 55839
+NC_059548.1 55125
+NC_059545.1 54383
+NC_059554.1 53273
+NC_059550.1 51810
+NC_059551.1 50650
+NC_059553.1 50387
+NC_059568.1 49619
+NC_059552.1 49409
+NC_059556.1 44004
+NC_059555.1 42853
+NC_059557.1 40060
+NC_059558.1 32275
+NC_059562.1 30572
+NC_059560.1 29078
+NC_059561.1 27468
+NC_059563.1 23532
+NC_059559.1 21640
+NC_059564.1 19603
+NC_059565.1 14213
+NC_059566.1 14098
+
+
+## Give me a glimpse of the file
+
+# first, convert to bcf format
+
+bcftools view -O b -o output.bcf colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gz
+
+# show the whole file from the top
+bcftools view output.bcf | less -S
+
+# show just the header with -h.  Here we look at just the last 10 lines of the header
+bcftools view -h output.bcf | tail
+
+# show the variants themselves (no header) with -H
+bcftools view -H output.bcf | less -S
+
+# extract CHROM POS and BaseQRankSum, separated by TABs
+bcftools query -f '%CHROM\t%POS\t%INFO/BaseQRankSum\n' colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gl_impute4.1.vcf.gz | less
+# interesting, I got an error: 
+
+Error: no such tag defined in the VCF header: INFO/BaseQRankSum
+
+# extract CHROM POS and total read depth DP
+bcftools query -f '%CHROM\t%POS\t%INFO/DP\n' output.bcf | less
+# I don't seem to have read depth either
+
+# view specific individuals (I picked HM18, LL6)
+bcftools view -s HM18,LL6 output.bcf | less -S

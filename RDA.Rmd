@@ -1,0 +1,487 @@
+---
+title: "*Colias* Redundancy Analysis"
+author: "Lily Durkee"
+date: "2024-05-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Upload raw VCF file, sample 10,000 SNPs
+
+```{r}
+# Install and load the adegenet package
+#install.packages("adegenet")
+library(adegenet)
+library(vegan)
+
+# Set the path to your PLINK .raw file (without the file extension)
+raw_vcf <- "Data/colias.4x.merged_gatk.rm.relate.SNP.filtered_gatkVQSR2.PASS.8miss.recode.vcf.gl_impute4.1.raw"
+
+# Read the .raw file into R
+colias_vcf <- read.PLINK(raw_vcf)
+
+# view the number of NAs
+sum(is.na(colias_vcf))
+
+# isolate sample names
+samples_all <- data.frame(ID=pop(colias_vcf))
+
+# number of SNPs
+snps_n <- nLoc(colias_vcf)
+
+# sample 100k
+set.seed(123)  # for reproducibility
+snps_select <- sample(snps_n, 100000)
+colias_vcf.sub <- colias_vcf[,snps_select]
+```
+## Upload (lat,long) coordinates for butterflies
+```{r}
+#install.packages("elevatr")
+library(elevatr)
+library(raster)
+library(tidyverse)
+library(geodata)
+library(sf)
+
+# this file is updated to include correct sample IDs
+all.colias <- read.csv("Data/Colias-samples-2022-all.csv")
+
+
+#bioclim_vars <- getData("worldclim", var="bio", res=.5, lat = all.colias$y, lon = all.colias$x)
+
+#bioclim8 <- raster("wc0.5/bio8_12.bil")
+#bioclim13 <- raster("wc0.5/bio13_12.bil")
+
+#### merge with sample IDs: colias_samples ####
+samples_all <- data.frame(ID=pop(colias_vcf))
+colias_samples1 <- merge(samples_all, all.colias, by="ID", all=F)
+
+latlong <- colias_samples1 %>% dplyr:: select(x, y)
+```
+
+
+## Load bioclim variables
+
+```{r}
+library(tidyverse)
+colias_clim1 <- read.csv("colias_bioclim.csv") %>% dplyr::select(-X)
+latlong <- colias_clim1 %>% dplyr:: select(x, y)
+```
+
+## Load elevation using package `elevatr`
+
+```{r}
+library(elevatr)
+#library(raster)
+library(tidyverse)
+#library(geodata)
+library(sf)
+
+# #### extract elevation data using elevatr ####
+crs <- st_crs("+proj=longlat +datum=WGS84")
+
+# Convert your elevation.df data frame to an sf object
+elevation.sf <- st_as_sf(latlong, coords = c("x", "y"), crs = crs)
+
+elevation <- get_elev_point(elevation.sf)
+#### final file ####
+
+#colias_clim1 <- cbind(colias_samples1, data.frame(tmax=tmax, precip=prec, wind=wind, srad=srad))
+colias_clim.final <- cbind(colias_clim1, elevation)
+
+#write.csv(colias_clim, "colias_bioclim.csv")
+```
+
+
+## Run the RDA
+
+```{r}
+library(vegan) # to run the RDA
+library(psych) # for visualizing correlations
+#library(viridis) # for colors
+
+# ## look at samples in VCF
+# # use the pop() function to retrieve the sample names
+# sample_names <- pop(colias_vcf)
+# 
+# ## compare samples in each file
+# list1 <- print(sample_names)
+# #colias_samples$ID <- as.factor(colias_samples$ID)
+# list2 <- colias_samples[,1]
+# 
+# setdiff(list1, list2)
+
+
+## will need environment data for every point, in the same order
+identical(as.character(samples_all[,1]), colias_clim.final[,1]) 
+
+#TRUE!
+
+#colias_clim$ID <- as.character(colias_clim$ID)
+
+# create ENV file that has the environmental variables to include
+colias_env.all <- colias_clim.final %>% dplyr::select(c(elevation, tmax, precip, srad, wind))
+pairs.panels(colias_env.all, scale=T)
+
+colias_env <- colias_clim.final %>% dplyr::select(c(elevation, precip, srad))
+pairs.panels(colias_env, scale=T)
+#png("colias_bioclim.corr_final.png")
+
+#### run the RDA on all the data - file too big, takes forever ####
+#colias_rda <- rda(colias_vcf ~ ., data=colias_env, scale=T)
+#colias_rda
+
+#### run the RDA on a subset of 100k SNPs ####
+colias_rda.sub <- rda(colias_vcf.sub ~ ., data=colias_env, scale=T)
+colias_rda.sub
+
+# R squared
+RsquareAdj(colias_rda.sub)
+screeplot(colias_rda.sub)
+
+# plot the RDA model
+plot(colias_rda.sub)
+# visualize RDA axes
+
+# check for significance / this takes forever
+#signif.full <- anova.cca(colias_rda.sub, parallel=getOption("mc.cores")) # default is permutation=999
+signif.full
+
+# variance inflation factor - tells if variables are correlated
+vif.cca(colias_rda.sub)
+
+#### RDA plots ####
+# try a plot
+plot(colias_rda.sub, scaling=3)
+
+# more informative plots
+colias_env$site <- colias_clim1$site
+unique(colias_clim1$site)
+levels(colias_env$site) <- as.fac("Babbit Gulch","Carpenter Ranch","Dumont Lake","Fountain Valley","Harbison Meadows","High Trails Ranch","Kebler Pass","D Loukonen Farm","Little Laramie","Schreiner Farm","North Fork Trail","Orchard Creek Ranch","Spring Canyon Park","Soapstone Prairie")
+eco <- colias_env$site
+bg <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+                     "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+                     "#aec7e8", "#ffbb78", "#98df4a", "#ff9896")
+
+
+# match site names to colors
+site_colors <- bg[match(eco, levels(eco))]
+png("Colias_RDA_attempt1-axis1&2.png", width = 10, height = 8, units = "in", res = 350)
+
+plot(colias_rda.sub, type="n", scaling=3, cex.axis=1.2, cex.lab=1.2)
+points(colias_rda.sub, display="species", pch=4, cex=.7, col="gray32", scaling=3)  # the SNPs
+points(colias_rda.sub, display="sites", pch=21, cex=2, scaling=3, bg=site_colors)  # the butterflies
+text(colias_rda.sub, scaling=3, display="bp", col="#0868ac", cex=1.5)  # the predictors
+legend("bottomright", legend=levels(eco), bty="n", col="gray32", pch=21, cex=1, pt.bg=bg)
+
+dev.off()
+
+## axis 1 & 3
+png("Colias_RDA_attempt1-axis1&3.png", width = 12, height = 12, units = "in", res = 350)
+
+plot(colias_rda.sub, type="n", scaling=2, cex.axis=1.2, cex.lab=1.2, choices=c(1,3))
+points(colias_rda.sub, display="species", pch=4, cex=.7, col="gray32", scaling=3)  # the SNPs
+points(colias_rda.sub, display="sites", pch=21, cex=1.5, scaling=2, bg=site_colors)  # the butterflies
+text(colias_rda.sub, scaling=3, display="bp", col="#0868ac", cex=1)  # the predictors
+legend("bottomright", legend=levels(eco), bty="n", col="gray32", pch=21, cex=1, pt.bg=bg)
+
+dev.off()
+```
+
+## Identifying candidate SNPs
+```{r}
+#### run the RDA on ALL 1.4mil SNPs ####
+colias_rda <- rda(colias_vcf ~ ., data=colias_env, scale=T)
+colias_rda
+
+load.rda <- scores(colias_rda, choices=c(1:3), display="species")
+
+# relatively normal distributions 
+layout(matrix(1:3, nrow = 1))
+hist(load.rda[,1], main="Loadings on RDA1")
+hist(load.rda[,2], main="Loadings on RDA2")
+hist(load.rda[,3], main="Loadings on RDA3")
+
+# we are interested in SNPs at the tails of the distributions
+# this function will be able to detect outlier SNPs
+outliers <- function(x,z){
+  lims <- mean(x) + c(-1, 1) * z * sd(x)     # find loadings +/-z sd from mean loading     
+  x[x < lims[1] | x > lims[2]]               # locus names in these tails
+}
+
+# candidate loci
+cand1 <- outliers(load.rda[,1],3) # 651
+cand2 <- outliers(load.rda[,2],3) # 214
+cand3 <- outliers(load.rda[,3],3) # 214
+
+# number of candidate loci identified
+ncand <- length(cand1) + length(cand2) + length(cand3)
+ncand 
+ 
+#1,079 with 100k SNPs
+# 23,618 with all SNPs
+
+# now, we will organize our results in one data frame with axis, SNP name, & correlation with each predictor
+cand1 <- cbind.data.frame(rep(1,times=length(cand1)), names(cand1), unname(cand1))
+cand2 <- cbind.data.frame(rep(2,times=length(cand2)), names(cand2), unname(cand2))
+cand3 <- cbind.data.frame(rep(3,times=length(cand3)), names(cand3), unname(cand3))
+
+colnames(cand1) <- colnames(cand2) <- colnames(cand3) <- c("axis","snp","loading")
+
+cand <- rbind(cand1, cand2, cand3)
+cand$snp <- as.character(cand$snp)
+
+head(cand)
+
+# we will now put them in a single data frame with the 3 env predictors
+foo <- matrix(NA, nrow=(ncand), ncol=3)  # 3 columns for 3 predictors
+colnames(foo) <- c("elevation", "precip", "srad")
+
+for (i in 1:length(cand$snp)) {
+  nam <- cand[i,2]
+  snp.gen <- as.matrix(colias_vcf)[,nam]
+  foo[i,] <- apply(dplyr::select(colias_env, c(elevation, precip, srad)), 2, 
+                   function(x) cor(x,snp.gen))
+}
+
+cand <- cbind.data.frame(cand,foo)  
+head(cand)
+
+# 1075 total duplicates
+length(cand$snp[duplicated(cand$snp)])
+
+# axis 1
+foo <- cbind(cand$axis, duplicated(cand$snp)) 
+table(foo[foo[,1]==1,2]) 
+
+# axis 2
+table(foo[foo[,1]==2,2])
+
+# axis 3
+table(foo[foo[,1]==3,2]) 
+
+cand_no.dup <- cand[!duplicated(cand$snp),] # remove duplicate detections
+# only 4 left
+
+# see which environmental vars they are most correlated with
+
+for (i in 1:length(cand_no.dup$snp)) {
+  bar <- cand_no.dup[i,]
+  cand_no.dup[i,7] <- names(which.max(abs(bar[3:6]))) # gives the variable
+  cand_no.dup[i,8] <- max(abs(bar[3:6]))              # gives the correlation
+}
+
+colnames(cand_no.dup)[7] <- "predictor"
+colnames(cand_no.dup)[8] <- "correlation"
+
+table(cand_no.dup$predictor) 
+
+# for 100k SNPs
+# elevation   loading      srad 
+#         1         1         2 
+```
+
+# APPENDIX - Climate variable upload
+
+## Upload climate data - BioClim - these data are now in file `colias_bioclim.csv`
+```{r}
+library(raster)
+
+# List of months
+months <- c("06", "07", "08")
+
+#### WIND ####
+
+# Initialize an empty raster stack to store the monthly wind rasters
+wind_rasters <- stack()
+
+# Loop through each month
+for (month in months) {
+  # Construct the file name for the wind raster
+  file_name <- paste0("Data/bioclim-wind/wc2.1_30s_wind_", month, ".tif")
+  
+  # Load the wind raster for the current month
+  wind_raster <- raster(file_name)
+  
+  # Add the wind raster to the raster stack
+  wind_rasters <- addLayer(wind_rasters, wind_raster)
+}
+
+# Calculate the mean across the raster stack to get the average wind for June, July, and August
+mean_wind <- mean(wind_rasters)
+
+## extract points
+wind <- extract(mean_wind, latlong)
+
+#### TMAX ####
+
+# Initialize an empty raster stack to store the monthly wind rasters
+tmax_rasters <- stack()
+
+# Loop through each month
+for (month in months) {
+  # Construct the file name for the wind raster
+  file_name <- paste0("Data/bioclim-tmax/wc2.1_30s_tmax_", month, ".tif")
+  
+  # Load the tmax raster for the current month
+  tmax_raster <- raster(file_name)
+  
+  # Add the tmax raster to the raster stack
+  tmax_rasters <- addLayer(tmax_rasters, tmax_raster)
+}
+
+# Calculate the mean across the raster stack to get the average wind for June, July, and August
+mean_tmax <- mean(tmax_rasters)
+
+## extract points
+tmax <- extract(mean_tmax, latlong)
+
+#### PRECIPITATION ####
+
+# Initialize an empty raster stack to store the monthly precip rasters
+prec_rasters <- stack()
+
+# Loop through each month
+for (month in months) {
+  # Construct the file name for the precip raster
+  file_name <- paste0("Data/bioclim-prec/wc2.1_30s_prec_", month, ".tif")
+  
+  # Load the precip raster for the current month
+  prec_raster <- raster(file_name)
+  
+  # Add the precip raster to the raster stack
+  prec_rasters <- addLayer(prec_rasters, prec_raster)
+}
+
+# Calculate the mean across the raster stack to get the average wind for June, July, and August
+mean_prec <- mean(prec_rasters)
+
+## extract points
+prec <- extract(mean_prec, latlong)
+
+
+#### SOLAR RADIATION ####
+
+# Initialize an empty raster stack to store the monthly srad rasters
+srad_rasters <- stack()
+
+# Loop through each month
+for (month in months) {
+  # Construct the file name for the srad raster
+  file_name <- paste0("Data/bioclim-srad/wc2.1_30s_srad_", month, ".tif")
+  
+  # Load the srad raster for the current month
+  srad_raster <- raster(file_name)
+  
+  # Add the srad raster to the raster stack
+  srad_rasters <- addLayer(srad_rasters, srad_raster)
+}
+
+# Calculate the mean across the raster stack to get the average wind for June, July, and August
+mean_srad <- mean(srad_rasters)
+
+## extract points
+srad <- extract(mean_srad, latlong)
+```
+
+## Upload climate data - Adapt West  - *not granular enough*
+
+```{r}
+# #library(raster)
+# 
+# # List of variable names
+# variables <- c("PPT", "Tmax")
+# 
+# # List of months
+# months <- c("06", "07", "08")
+
+
+# ## extract PPT values for June-August
+# PPT06.ras <- raster("Normal_1991_2020_monthly/Normal_1991_2020_PPT06.tif")
+# PPT07.ras <- raster("Normal_1991_2020_monthly/Normal_1991_2020_PPT07.tif")
+# PPT08.ras <- raster("Normal_1991_2020_monthly/Normal_1991_2020_PPT08.tif")
+# 
+# PPT06 <- extract(PPT06.ras, latlong)
+# PPT07 <- extract(PPT07.ras, latlong)
+# PPT08 <- extract(PPT08.ras, latlong)
+# 
+# ## extract Tmax values for June-August
+# Tmax06 <- raster("Normal_1991_2020_monthly/Normal_1991_2020_Tmax06.tif")
+# Tmax07 <- raster("Normal_1991_2020_monthly/Normal_1991_2020_Tmax07.tif")
+# Tmax08 <- raster("Normal_1991_2020_monthly/Normal_1991_2020_Tmax08.tif")
+# 
+# Tmax06 <- extract(Tmax06, latlong)
+# Tmax07 <- extract(Tmax07, latlong)
+# Tmax08 <- extract(Tmax08, latlong)
+# 
+# colias_clim1 <- cbind(colias_samples1, data.frame(Tmax06=Tmax06, 
+#                                                   Tmax07=Tmax07,
+#                                                   Tmax08=Tmax08,
+#                                                   PPT06=PPT06,
+#                                                   PPT07=PPT07,
+#                                                   PPT08=PPT08))
+# 
+# ## all of these values are the same :(
+
+## try precipitation as snow
+
+#pas.ras <- raster("Normal_1991_2020_bioclim/Normal_1991_2020_PAS.tif")
+#pas <- extract(pas.ras, latlong)
+## these are also the same value :(
+
+# # Function to calculate the mean across months
+# calculate_mean <- function(variable) {
+#   # Initialize an empty list to store raster objects
+#   raster_list <- list()
+#   
+#   # Load raster files for each month
+#   for (month in months) {
+#     filename <- paste0("Normal_1991_2020_monthly/Normal_1991_2020_", variable, month, ".tif")
+#     raster_list[[month]] <- raster(filename)
+#   }
+#   
+#   # Extract values for each raster at the given lat/long points
+#   values_list <- lapply(raster_list, function(r) extract(r, latlong))
+#   
+#   # Calculate the mean for each set of values
+#   mean_values <- lapply(values_list, function(x) {
+#     print(dim(x))
+#     apply(x, 2, mean, na.rm = TRUE)
+#     })
+#   
+#   return(mean_values)
+# }
+# 
+# # Iterate over each variable
+# for (variable in variables) {
+#   # use the function above on each variable
+#   mean_values <- calculate_mean(variable)
+#   
+#   # create a raster with the mean values
+#   #mean_raster <- raster(matrix(mean_values, ncol = ncol(values_list[[1]])))
+# 
+#   # save the mean raster to a new file
+#   #writeRaster(mean_raster, filename = paste0("mean_", variable, "_June_August.tif"), format = "GTiff")
+# }
+
+```
+
+## Extract climate data using dismo - *lots of errors*
+
+```{r}
+# library(dismo)
+# # extract bioclim variables
+# # bioclim_var8 <- data.frame(raster::extract(bioclim8, latlong))
+# # bioclim_var13 <- data.frame(raster::extract(bioclim13, latlong))
+# 
+# colias_samples2 <- cbind(colias_samples1, bio8=bioclim_var8, bio18=bioclim_var13)
+# 
+# #all.colias$bio5_12 <- all.colias$bio5_12/10
+# 
+# colias_samples.final$bio8 <- colias_samples.final$raster..extract.bioclim8..latlong.
+# colias_samples.final$bio13 <- colias_samples.final$raster..extract.bioclim13..latlong.
+
+```
