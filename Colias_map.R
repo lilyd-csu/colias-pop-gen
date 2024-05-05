@@ -41,11 +41,34 @@ state <- map_data("state")
 counties <- map_data("county")
 #co_wy2 <- subset(counties, region=="colorado" | region=="wyoming")
 
-sites <- read.csv("sites-all1.csv")
+sites1 <- read.csv("Data/sites-all1.csv")
 #sites$pair <- ifelse(sites$name=="SC", "E2", ifelse(
 #                     sites$name=="WY", "WY", sites$pair))
 
 CDT <- read.csv("CDT.csv")
+
+#### high vs low - for BZ562 project ####
+sites <- read.csv("colias_bioclim.csv")
+#sites$site <- substr(sites$ID, 1, 2)
+#sites <- merge(sites, sites1, by="site", all=F)
+
+ggplot() +
+  ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
+  geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
+               color="black", fill="white", alpha=0) + # state
+  # geom_point(data=CDT, aes(x=long, y=lat, group=NULL), color="gray60", size=.01)+
+  # geom_line(data = sites, mapping = aes(x=x, y=y, group=pair), linewidth=.7)+
+  geom_point(data = sites, 
+             mapping = aes(x = x, y = y, fill=site), 
+             size = 6, shape=21)+
+  scale_fill_manual(values=c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
+                              "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
+                              "#aec7e8", "#ffbb78", "#98df4a", "#ff9896"))+
+ # scale_shape_manual(values = c(21, 24))+
+  theme_minimal() +
+  coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
+
+ggsave("Colias-map-project-bigger.png")
 
 #### fancy map with raster - entsoc ####
 map_raster <- ggplot() +
@@ -119,7 +142,7 @@ ggplot() +
   coord_sf(xlim = c(-110, -102), ylim = c(37, 42)) 
 
 
-#### fancy map with raster - attempt 1####
+#### fancy map with raster - attempt 1 ####
 map_raster <- ggplot() +
   ggspatial::layer_spatial(hypso_cropped, alpha=.8) +
   geom_polygon(data=state, mapping=aes(x=long, y=lat, group=group), 
