@@ -19,11 +19,12 @@ Butterflies, like other insect taxa, are declining worldwide (Warren et al., 202
 
 *Field collection*
 
-In June through August 2022, we collected *C. p. eriphyle* butterflies from seven low and seven high elevation sites on both sides of the continental divide in Colorado and southern Wyoming (Figure 1a). Low elevation sites will hereafter refer to those less than 2000m in elevation, and high elevation sites are those greater than 2000m in elevation. Sites were paired geographically, with one high and one low site identified that were geographically closer together than they were to other sites. All high-low site pairs had a difference in elevation of at least 1000m. Up to 20 individuals were collected per site with mesh butterfly nets. We assessed the abundance of *Colias* species at each site using Pollard walks and measured temperature and wind speed. If Colias abundance was zero, the temperature was too low (less than 20C), or the wind speeds were too high (consistent gusts of > 20kph), collection did not occur at the site that day. Successful field excursions resulted in at least five individuals netted and then placed in a glassine envelope. All collected individuals were transported to Colorado State University and were frozen alive or within 48hr of death in -80°C. Permission to collect individuals was obtained from the relevant agency (US National Park Service permit no. ROMO-00257, US Forest Service, City of Fort Collins, or private landowners) prior to the field season. 
+In June through August 2022, we collected *C. p. eriphyle* butterflies from seven low and seven high elevation sites on both sides of the continental divide in Colorado and southern Wyoming (Figure 1). Low elevation sites will hereafter refer to those less than 2000m in elevation, and high elevation sites are those greater than 2000m in elevation. Sites were paired geographically, with one high and one low site identified that were geographically closer together than they were to other sites. All high-low site pairs had a difference in elevation of at least 1000m. Up to 20 individuals were collected per site with mesh butterfly nets. We assessed the abundance of *Colias* species at each site using Pollard walks and measured temperature and wind speed. If Colias abundance was zero, the temperature was too low (less than 20C), or the wind speeds were too high (consistent gusts of > 20kph), collection did not occur at the site that day. Successful field excursions resulted in at least five individuals netted and then placed in a glassine envelope. All collected individuals were transported to Colorado State University and were frozen alive or within 48hr of death in -80°C. Permission to collect individuals was obtained from the relevant agency (US National Park Service permit no. ROMO-00257, US Forest Service, City of Fort Collins, or private landowners) prior to the field season. 
 
 ![image](https://github.com/lilyd-csu/colias-pop-gen/assets/112984536/78488ec5-f2d6-4e5d-b96b-ef3928a72e0a)
-**Figure 1.** Map of the 14 collection sites. 
+**Figure 1.** A map of the 14 collection sites.
 
+\
 *Sample preparation and sequencing*
 
 We extracted DNA from the thorax of up to 20 individuals per site using Qiagen DNeasy Blood and Tissue Kits. We assessed DNA yield using qbit assays and determined the quality of each sample using agarose gels. Library prep was completed following Schweizer & DeSaix (2023) on up to 12 of the highest quality samples per site. We sequenced 179 individuals total on three lanes of Novogene HiSeq 4000. 
@@ -38,40 +39,44 @@ All samples were trimmed using TRIMMOMATIC and downsampled to 4x coverage (Lou &
 
 The *C. p. eriphyle* genome consists of 31 scaffolds, and 1.4 million SNPs. A summary of the scaffolds and the number of variants associated with each is below.
 
-NC_059537.1 -> 72292 \
-NC_059540.1 -> 70942 \
-NC_059539.1 -> 69371 \
-NC_059538.1 -> 65905 \
-NC_059542.1 -> 64651 \
-NC_059544.1 -> 62968 \
-NC_059543.1 -> 62584 \
-NC_059541.1 -> 61237 \
-NC_059549.1 -> 58357 \
-NC_059546.1 -> 56426 \
-NC_059547.1 -> 55839 \
-NC_059548.1 -> 55125 \
-NC_059545.1 -> 54383 \
-NC_059554.1 -> 53273 \
-NC_059550.1 -> 51810 \
-NC_059551.1 -> 50650 \
-NC_059553.1 -> 50387 \
-NC_059568.1 -> 49619 \
-NC_059552.1 -> 49409 \
-NC_059556.1 -> 44004 \
-NC_059555.1 -> 42853 \
-NC_059557.1 -> 40060 \
-NC_059558.1 -> 32275 \
-NC_059562.1 -> 30572 \
-NC_059560.1 -> 29078 \
-NC_059561.1 -> 27468 \
-NC_059563.1 -> 23532 \
-NC_059559.1 -> 21640 \
-NC_059564.1 -> 19603 \
-NC_059565.1 -> 14213 \
-NC_059566.1 -> 14098
+| Scaffold   | No. Variants |
+|------------|--------------|
+| NC_059537.1| 72292        |
+| NC_059540.1| 70942        |
+| NC_059539.1| 69371        |
+| NC_059538.1| 65905        |
+| NC_059542.1| 64651        |
+| NC_059544.1| 62968        |
+| NC_059543.1| 62584        |
+| NC_059541.1| 61237        |
+| NC_059549.1| 58357        |
+| NC_059546.1| 56426        |
+| NC_059547.1| 55839        |
+| NC_059548.1| 55125        |
+| NC_059545.1| 54383        |
+| NC_059554.1| 53273        |
+| NC_059550.1| 51810        |
+| NC_059551.1| 50650        |
+| NC_059553.1| 50387        |
+| NC_059568.1| 49619        |
+| NC_059552.1| 49409        |
+| NC_059556.1| 44004        |
+| NC_059555.1| 42853        |
+| NC_059557.1| 40060        |
+| NC_059558.1| 32275        |
+| NC_059562.1| 30572        |
+| NC_059560.1| 29078        |
+| NC_059561.1| 27468        |
+| NC_059563.1| 23532        |
+| NC_059559.1| 21640        |
+| NC_059564.1| 19603        |
+| NC_059565.1| 14213        |
+| NC_059566.1| 14098        |
+
 
 Click here to view the full exploration of my VCF file.
 
+\
 *Redundancy Analysis*
 
 I extracted variables from raster files from WorldClim 2 (data from 1970-2000) using the GPS coordinates of where each individual was collected during the collection season, June-August. I extracted values for each variable for each month, and then averaged over those three values. I used four bioclim variables:
@@ -84,12 +89,15 @@ I extracted variables from raster files from WorldClim 2 (data from 1970-2000) u
 I then extracted an elevation value for each butterfly using the package `elevatr`. This package uses data from the Amazon Web Services Terrain Tiles and the USGS Elevation Point Query Service. I examined the correlation between these five variables using the `psych` package (Figure 2). 
 
 ![colias_bioclim corr_all](https://github.com/lilyd-csu/colias-pop-gen/assets/112984536/5cdba729-a7a9-4703-be1b-010f8547e5aa)
-**Figure 2**. Correlation between the five bioclimatic variables. 
+**Figure 2.** The correlations and distributions of each of the five bioclimatic variables. 
 
+\
 Because `wind` was highly correlated (r > |0.8|) with `srad` and `precip`, I removed `wind`. I also removed `tmax` which was highly correlated with `elevation`. I proceeded with the analysis using the following variables: `elevation`, `precip`, and `srad`. The plot below illustrates the strength of the correlation with each population (color coded by site) with the bioclimatic variables (blue arrows). The clustering of the points indicates the population structure driven by differences in the environment. 
 
 ![Colias_RDA_attempt1-axis1 2](https://github.com/lilyd-csu/colias-pop-gen/assets/112984536/c0f59360-2878-4446-9b82-15241361d323)
+**Figure 3.** Preliminary redundancy analysis.
 
+\
 To see the code that generated this plot and an investigation of the SNPs correlated with environmental variables, please see the file here.
 
 
