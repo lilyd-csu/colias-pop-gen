@@ -4,6 +4,8 @@ Lead author: Lily Durkee
 
 Co-authors: Christen Bossu, Kristen Ruegg, and Ruth Hufbauer
 
+
+
 ### Background
 The loss of biodiversity due to climate change and human activity is a central issue in conservation (Harvey et al., 2023). Insect populations in particular have declined sharply in recent years, and this so-called “insect apocalypse” poses threats to ecosystem function, for example declines in pollination services and nutrient cycling (Wagner et al., 2021). Habitat fragmentation, pesticide use, and warming temperatures pose severe threats to insect populations globally, and the question arises of whether or not insect species can adapt to these rapidly changing conditions (Webster et al., 2023). 
 
@@ -15,14 +17,15 @@ Butterflies, like other insect taxa, are declining worldwide (Warren et al., 202
 
 
 
+
 ### Methods
 
 *Field collection*
 
 In June through August 2022, we collected *C. p. eriphyle* butterflies from seven low and seven high elevation sites on both sides of the continental divide in Colorado and southern Wyoming (Figure 1). Low elevation sites will hereafter refer to those less than 2000m in elevation, and high elevation sites are those greater than 2000m in elevation. Sites were paired geographically, with one high and one low site identified that were geographically closer together than they were to other sites. All high-low site pairs had a difference in elevation of at least 1000m. Up to 20 individuals were collected per site with mesh butterfly nets. We assessed the abundance of *Colias* species at each site using Pollard walks and measured temperature and wind speed. If Colias abundance was zero, the temperature was too low (less than 20C), or the wind speeds were too high (consistent gusts of > 20kph), collection did not occur at the site that day. Successful field excursions resulted in at least five individuals netted and then placed in a glassine envelope. All collected individuals were transported to Colorado State University and were frozen alive or within 48hr of death in -80°C. Permission to collect individuals was obtained from the relevant agency (US National Park Service permit no. ROMO-00257, US Forest Service, City of Fort Collins, or private landowners) prior to the field season. 
 
-![image](https://github.com/lilyd-csu/colias-pop-gen/assets/112984536/78488ec5-f2d6-4e5d-b96b-ef3928a72e0a)
-**Figure 1.** A map of the 14 collection sites.
+![Colias-map-project-final](https://github.com/lilyd-csu/colias-pop-gen/assets/112984536/5ac5af10-4f63-457a-b65b-3e9e3ec0981b)
+**Figure 1.** A map of the individuals collected at the 14 collection sites throughout Colorado. 
 
 \
 *Sample preparation and sequencing*
@@ -32,6 +35,9 @@ We extracted DNA from the thorax of up to 20 individuals per site using Qiagen D
 *Bioinformatics*
 
 All samples were trimmed using TRIMMOMATIC and downsampled to 4x coverage (Lou & Therkildsen, 2022). Related individuals were identified using NGSRelate and removed from the dataset. We then mapped each individual to the clouded yellow butterfly (*Colias crocea*) reference genome (Ebdon et al., 2022). We used a standard GATK workflow with imputation using `ANGSD` to create a VCF file. To look for associations between loci and environment, we used a redundancy analysis to identify single nucleotide polymorphisms (SNPs) associated with elevation and associated bioclimatic variables (Forester et al., 2018). The one site in Wyoming was removed due to not having individual GPS coordinates.
+
+
+
 
 ### Results
 
