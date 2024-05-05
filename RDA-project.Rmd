@@ -32,9 +32,9 @@ samples_all <- data.frame(ID=pop(colias_vcf))
 snps_n <- nLoc(colias_vcf)
 ```
 
-## Subsample VCF file
+## Subsample the VCF file
 
-Since my VCF file has 1.4 million SNPs, I subsampled down to 100k for this analysis. 
+Since my VCF file has 1.4 million SNPs, I subsampled down to 100k SNPs for this analysis. 
 
 ```{r}
 # sample 100k
@@ -128,7 +128,7 @@ plot(colias_rda.sub, scaling=3)
 # more informative plots - color coded by site
 colias_env$site <- colias_clim1$site
 unique(colias_clim1$site)
-levels(colias_env$site) <- as.fac("Babbit Gulch","Carpenter Ranch","Dumont Lake","Fountain Valley","Harbison Meadows","High Trails Ranch","Kebler Pass","D Loukonen Farm","Little Laramie","Schreiner Farm","North Fork Trail","Orchard Creek Ranch","Spring Canyon Park","Soapstone Prairie")
+levels(colias_env$site) <- as.factor(c("Babbit Gulch","Carpenter Ranch","Dumont Lake","Fountain Valley","Harbison Meadows","High Trails Ranch","Kebler Pass","D Loukonen Farm","Little Laramie","Schreiner Farm","North Fork Trail","Orchard Creek Ranch","Spring Canyon Park","Soapstone Prairie"))
 eco <- colias_env$site
 bg <- c("#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd",
                      "#8c564b", "#e377c2", "#7f7f7f", "#bcbd22", "#17becf",
@@ -147,7 +147,7 @@ legend("bottomright", legend=levels(eco), bty="n", col="gray32", pch=21, cex=1, 
 ## plot for axes 1 & 3
 # png("Colias_RDA_attempt1-axis1&3.png", width = 12, height = 12, units = "in", res = 350)
 
-plot(colias_rda.sub, type="n", scaling=2, cex.axis=1.2, cex.lab=1.2, choices=c(1,3))
+plot(colias_rda.sub, type="n", scaling=3, cex.axis=1.2, cex.lab=1.2, choices=c(1,3))
 points(colias_rda.sub, display="species", pch=4, cex=.7, col="gray32", scaling=3)  # the SNPs
 points(colias_rda.sub, display="sites", pch=21, cex=1.5, scaling=2, bg=site_colors)  # the butterflies
 text(colias_rda.sub, scaling=3, display="bp", col="#0868ac", cex=1)  # the predictors
