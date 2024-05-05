@@ -80,7 +80,7 @@ The *C. p. eriphyle* genome consists of 31 scaffolds, and 1.4 million SNPs. A su
 | NC_059566.1| 14098        |
 
 
-Click here to view the full exploration of my VCF file.
+[Click here](VCF-file-exploration.txt) to view the full exploration of my VCF file.
 
 \
 *Redundancy Analysis*
