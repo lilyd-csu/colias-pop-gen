@@ -1,4 +1,4 @@
-## Examining local adaptation in the clouded sulfur butterfly
+# Examining local adaptation in the clouded sulfur butterfly
 
 Lead author: Lily Durkee
 
@@ -6,7 +6,7 @@ Co-authors: Christen Bossu, Kristen Ruegg, and Ruth Hufbauer
 
 
 
-### Background
+## Background
 The loss of biodiversity due to climate change and human activity is a central issue in conservation (Harvey et al., 2023). Insect populations in particular have declined sharply in recent years, and this so-called “insect apocalypse” poses threats to ecosystem function, for example declines in pollination services and nutrient cycling (Wagner et al., 2021). Habitat fragmentation, pesticide use, and warming temperatures pose severe threats to insect populations globally, and the question arises of whether or not insect species can adapt to these rapidly changing conditions (Webster et al., 2023). 
 
 Spatial and geographic gradients can serve as a way to study adaptation to different habitats at a single point in time (Reusch & Wood, 2007). Latitudinal gradients can be used to assess adaptation to varying environmental conditions, for example during range expansions (Clark et al., 2022), and elevation gradients provide a way to study a species across a range of environmental conditions within relatively small spatial scales, as temperature tends to decrease as elevation increases (Branch et al., 2017; Keller et al., 2013). Population differences have also been observed due to dispersal barriers (Manel & Holderegger, 2013), for example on either side of mountain ranges or among fragmented habitat patches. 
@@ -18,7 +18,7 @@ Butterflies, like other insect taxa, are declining worldwide (Warren et al., 202
 
 
 
-### Methods
+## Methods
 
 *Field collection*
 
@@ -39,7 +39,7 @@ All samples were trimmed using TRIMMOMATIC and downsampled to 4x coverage (Lou &
 
 
 
-### Results
+## Results
 
 *VCF file exploration*
 
