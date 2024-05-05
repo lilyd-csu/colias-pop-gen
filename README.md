@@ -104,6 +104,12 @@ Because `wind` was highly correlated (r > |0.8|) with `srad` and `precip`, I rem
 **Figure 3.** Preliminary redundancy analysis.
 
 \
-To see the code that generated this plot and an investigation of the SNPs correlated with environmental variables, please see the file here.
+To see the code that generated this plot and an investigation of the SNPs correlated with environmental variables, please see the [file here](RDA-project.pdf).
+*(Note: the RDA figures do not look great on the Rmd file.)*
+
+## Discussion & Future Directions
+
+[add some text here]
+
 
 
