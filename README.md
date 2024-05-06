@@ -95,6 +95,7 @@ I extracted variables from raster files from WorldClim 2 (data from 1970-2000) u
 I then extracted an elevation value for each butterfly using the package `elevatr`. This package uses data from the Amazon Web Services Terrain Tiles and the USGS Elevation Point Query Service. I examined the correlation between these five variables using the `psych` package (Figure 2). 
 
 ![colias_bioclim corr_all](https://github.com/lilyd-csu/colias-pop-gen/assets/112984536/5cdba729-a7a9-4703-be1b-010f8547e5aa)
+
 **Figure 2.** The correlations and distributions of each of the five bioclimatic variables. 
 
 \
