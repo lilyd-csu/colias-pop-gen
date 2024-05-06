@@ -101,7 +101,7 @@ I then extracted an elevation value for each butterfly using the package `elevat
 Because `wind` was highly correlated (r > |0.8|) with `srad` and `precip`, I removed `wind`. I also removed `tmax` which was highly correlated with `elevation`. I proceeded with the analysis using the following variables: `elevation`, `precip`, and `srad`. The plot below illustrates the strength of the correlation with each population (color coded by site) with the bioclimatic variables (blue arrows). The clustering of the points indicates the population structure driven by differences in the environment. 
 
 ![Colias_RDA_attempt1-axis1 2](https://github.com/lilyd-csu/colias-pop-gen/assets/112984536/c0f59360-2878-4446-9b82-15241361d323)
-**Figure 3.** Preliminary redundancy analysis.
+**Figure 3.** Preliminary redundancy analysis. The gray cloud in the center represent the 100k SNPs used in this analysis, and the blue arrows represent the axes corresponding with each environmental variable. 
 
 \
 To see the code that generated this plot and an investigation of the SNPs correlated with environmental variables, please see the [file here](RDA-project.pdf).
