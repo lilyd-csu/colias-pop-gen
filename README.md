@@ -137,6 +137,8 @@ Ellers, J., & Boggs, C. L. (2004). Evolutionary genetics of dorsal wing colour i
 
 Ezzeddine, M., & Matter, S. F. (2008). Nectar flower use and electivity by butterflies in sub-alpine meadows. Journal of the Lepidopterists’ Society, 62(3), 138–142.
 
+Forester BR, Lasky JR, Wagner HH, Urban DL (2018) Comparing methods for detecting multilocus adaptation with multivariate genotype-environment associations. Molecular Ecology. DOI: 10.1111/mec.14584
+
 Gompert, Z., Lucas, L. K., Buerkle, C. A., Forister, M. L., Fordyce, J. A., & Nice, C. C. (2014). Admixture and the organization of genetic diversity in a butterfly species complex revealed through common and rare genetic variants. Molecular Ecology, 23(18), 4555–4573. https://doi.org/10.1111/mec.12811
 
 Harvey, J. A., Tougeron, K., Gols, R., Heinen, R., Abarca, M., Abram, P. K., Basset, Y., Berg, M., Boggs, C., Brodeur, J., Cardoso, P., de Boer, J. G., De Snoo, G. R., Deacon, C., Dell, J. E., Desneux, N., Dillon, M. E., Duffy, G. A., Dyer, L. A., … Chown, S. L. (2023). Scientists’ warning on climate change and insects. Ecological Monographs, 93(1), 1–37. https://doi.org/10.1002/ecm.1553
